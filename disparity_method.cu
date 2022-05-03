@@ -18,17 +18,24 @@
 
 **/
 
-#include "disparity_method.h"
+#include "disparity_method.cuh"
+#include "util.h"
+#include "configuration.h"
+#include "costs.h"
+#include "hamming_cost.h"
+#include "median_filter.h"
+#include "cost_aggregation.h"
+#include "debug.h"
 
-static cudaStream_t stream1, stream2, stream3;//, stream4, stream5, stream6, stream7, stream8;
-static uint8_t *d_im0;
-static uint8_t *d_im1;
-static cost_t *d_transform0;
-static cost_t *d_transform1;
-static uint8_t *d_cost;
-static uint8_t *d_disparity;
-static uint8_t *d_disparity_filtered_uchar;
-static uint8_t *h_disparity;
+static cudaStream_t stream1, stream2, stream3; //, stream4, stream5, stream6, stream7, stream8;
+static uint8_t* d_im0;
+static uint8_t* d_im1;
+static cost_t* d_transform0;
+static cost_t* d_transform1;
+static uint8_t* d_cost;
+static uint8_t* d_disparity;
+static uint8_t* d_disparity_filtered_uchar;
+static uint8_t* h_disparity;
 static uint16_t *d_S;
 static uint8_t *d_L0;
 static uint8_t *d_L1;
@@ -37,8 +44,8 @@ static uint8_t *d_L3;
 static uint8_t *d_L4;
 static uint8_t *d_L5;
 static uint8_t *d_L6;
-static uint8_t *d_L7;
-static uint8_t p1, p2;
+static uint8_t* d_L7;
+static uint8_t p1 = 6, p2 = 96;
 static bool first_alloc;
 static uint32_t cols, rows, size, size_cube_l;
 
@@ -58,18 +65,18 @@ void init_disparity_method(const uint8_t _p1, const uint8_t _p2) {
     cols = 0;
 }
 
-cv::Mat compute_disparity_method(cv::Mat left, cv::Mat right, float *elapsed_time_ms, const char* directory, const char* fname) {
-	if(cols != left.cols || rows != left.rows) {
-		debug_log("WARNING: cols or rows are different");
-		if(!first_alloc) {
-			debug_log("Freeing memory");
-			free_memory();
-		}
-		first_alloc = false;
-		cols = left.cols;
-		rows = left.rows;
-		size = rows*cols;
-		size_cube_l = size*MAX_DISPARITY;
+cv::Mat compute_disparity_method(cv::Mat left, cv::Mat right, float* elapsed_time_ms) {
+    if (cols != left.cols || rows != left.rows) {
+        debug_log("WARNING: cols or rows are different");
+        if (!first_alloc) {
+            debug_log("Freeing memory");
+            free_memory();
+        }
+        first_alloc = false;
+        cols = left.cols;
+        rows = left.rows;
+        size = rows * cols;
+        size_cube_l = size*MAX_DISPARITY;
 		CUDA_CHECK_RETURN(cudaMalloc((void **)&d_transform0, sizeof(cost_t)*size));
 
 		CUDA_CHECK_RETURN(cudaMalloc((void **)&d_transform1, sizeof(cost_t)*size));

@@ -15,25 +15,27 @@
 #    You should have received a copy of the GNU General Public License
 #    along with sgm.  If not, see <http://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 2.4)
-project(sgm)
+cmake_minimum_required(VERSION 3.9)
+project(sgm LANGUAGES CXX CUDA)
 
-find_package( OpenCV REQUIRED )
-find_package( CUDA REQUIRED )
+find_package(OpenCV REQUIRED)
+find_package(CUDA REQUIRED)
 
 set(
-    CUDA_NVCC_FLAGS
-    ${CUDA_NVCC_FLAGS};
-    -O3 -lineinfo
-    -gencode=arch=compute_35,code=sm_35
-    -gencode=arch=compute_50,code=sm_50
-    -gencode=arch=compute_52,code=sm_52
-    -gencode=arch=compute_75,code=sm_75
-    )
+        CUDA_NVCC_FLAGS
+        ${CUDA_NVCC_FLAGS};
+        -O3 -lineinfo
+        -gencode=arch=compute_50,code=sm_50
+        -gencode=arch=compute_52,code=sm_52
+        -gencode=arch=compute_75,code=sm_75
+        -gencode=arch=compute_86,code=sm_86
+)
+include_directories(${OpenCV_INCLUDE_DIRS} ${CUDA_INCLUDE_DIRS})
 
-cuda_add_executable(
-    sgm
-    main.cu median_filter.cu hamming_cost.cu disparity_method.cu debug.cu costs.cu)
+add_library(sgm STATIC disparity_method.cuh median_filter.cu hamming_cost.cu disparity_method.cu debug.cu costs.cu)
+target_compile_features(sgm PUBLIC cxx_std_17)
+set_property(TARGET sgm PROPERTY CUDA_ARCHITECTURES "50;52;75;86")
+set_property(TARGET sgm PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
-target_link_libraries( sgm ${OpenCV_LIBS} )
+target_link_libraries(sgm ${OpenCV_LIBS})
 
